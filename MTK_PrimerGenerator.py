@@ -492,7 +492,7 @@ def generate_GG_protocol(seq, part_num, verbose):
             fail_condition_3 = []
             for rp in rand_prim_set_OH:
                 gc_content = np.sum(np.array([(nuc in 'CGcg') for nuc in rp]))
-                fail_condition_3.append(gc_content == 0)
+                fail_condition_3.append((gc_content == 0) | (gc_content == 4))
 
             print('Found ' + str((np.sum(fail_condition_1) + np.sum(fail_condition_2) + np.sum(fail_condition_3))) + ' exceptions')
             if (np.sum(fail_condition_1) + np.sum(fail_condition_2) + np.sum(fail_condition_3)) > 0:
