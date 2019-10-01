@@ -316,7 +316,7 @@ def generate_GG_protocol(seq, part_num, verbose):
             if contin:
                 pass
             else:
-                return()
+                exit()
 
         aa_seq = translate(seq)
         if aa_seq[-1] == '*':
