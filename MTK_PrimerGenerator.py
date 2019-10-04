@@ -1,5 +1,5 @@
 import numpy as np
-import pandas as pd
+import readline
 
 ######################################################
 # Basic tools for sequences and primer generation
