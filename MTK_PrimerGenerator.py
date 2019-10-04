@@ -316,7 +316,7 @@ def generate_GG_protocol(seq, part_num, verbose):
             if contin:
                 pass
             else:
-                exit()
+                return()
 
         aa_seq = translate(seq)
         if aa_seq[-1] == '*':
@@ -439,99 +439,101 @@ def generate_GG_protocol(seq, part_num, verbose):
 
             primer_sets.append(sub_primer_set)
 
-        primer_sets.append(['REV'])
-        overhang_seq['REV'] = find_bsmbi_overhangs(r1)[0]
+    primer_sets.append(['REV'])
+    overhang_seq['REV'] = find_bsmbi_overhangs(r1)[0]
 
 
-        #########################################################
-        # Test 10000 random combinations for overhang compatibility
-        # and choose best option
-        #########################################################
+    #########################################################
+    # Test 10000 random combinations for overhang compatibility
+    # and choose best option
+    #########################################################
 
-        if verbose == True:
-            print('\n=====================================================')
-            print('Designing ' + str(number_reactions_needed(seq)) + ' PCR reaction(s)...')
-            print('=====================================================\n')
+    if verbose == True:
+        print('\n=====================================================')
+        print('Designing ' + str(number_reactions_needed(seq)) + ' PCR reaction(s)...')
+        print('=====================================================\n')
 
-        np.random.seed(0)
-        still_looking = True
-        count = 0
+    np.random.seed(0)
+    still_looking = True
+    count = 0
 
-        while (still_looking == True) and (count <= 1000):
+    while (still_looking == True) and (count <= 1000):
+        if verbose:
             print('Testing iteration: ' + str(count + 1))
 
-            rand_prim_set = [i[np.random.randint(len(i))] for i in primer_sets]
+        rand_prim_set = [i[np.random.randint(len(i))] for i in primer_sets]
 
-            rand_prim_set_OH_for = np.array([overhang_seq[i] for i in rand_prim_set])
-            rand_prim_set_OH_rev = np.array([reverse_complement(overhang_seq[i]) for i in rand_prim_set])
-            rand_prim_set_OH = np.concatenate([rand_prim_set_OH_for, rand_prim_set_OH_rev])
+        rand_prim_set_OH_for = np.array([overhang_seq[i] for i in rand_prim_set])
+        rand_prim_set_OH_rev = np.array([reverse_complement(overhang_seq[i]) for i in rand_prim_set])
+        rand_prim_set_OH = np.concatenate([rand_prim_set_OH_for, rand_prim_set_OH_rev])
 
-            N = len(rand_prim_set_OH)
+        N = len(rand_prim_set_OH)
 
-            # check that no overhangs share three consecutive bases that are the same
-            # this also covers the case of identitical primers
-            fail_condition_1 = []
-            for a in range(N):
-                rp_a = rand_prim_set_OH[a]
-                for b in range(a + 1, N):
-                    rp_b = rand_prim_set_OH[b]
-                    fail_condition_1.append((rp_a[:-1] in rp_b) | (rp_a[1:] in rp_b))
-
-
-            # check that no overhangs differ in only one base pair (e.g. TAAG and TTAG)?
-            fail_condition_2 = []
-            for a in range(N):
-                rp_a = rand_prim_set_OH[a]
-                for b in range(a + 1, N):
-                    rp_b = rand_prim_set_OH[b]
-                    b = np.sum(np.array([nuc for nuc in rp_a]) == np.array([nuc for nuc in rp_b])) >= 3
-                    fail_condition_2.append(b)
+        # check that no overhangs share three consecutive bases that are the same
+        # this also covers the case of identitical primers
+        fail_condition_1 = []
+        for a in range(N):
+            rp_a = rand_prim_set_OH[a]
+            for b in range(a + 1, N):
+                rp_b = rand_prim_set_OH[b]
+                fail_condition_1.append((rp_a[:-1] in rp_b) | (rp_a[1:] in rp_b))
 
 
-            # check that no overhang has GC content of 0% or 100%.
-            fail_condition_3 = []
-            for rp in rand_prim_set_OH:
-                gc_content = np.sum(np.array([(nuc in 'CGcg') for nuc in rp]))
-                fail_condition_3.append((gc_content == 0) | (gc_content == 4))
+        # check that no overhangs differ in only one base pair (e.g. TAAG and TTAG)?
+        fail_condition_2 = []
+        for a in range(N):
+            rp_a = rand_prim_set_OH[a]
+            for b in range(a + 1, N):
+                rp_b = rand_prim_set_OH[b]
+                b = np.sum(np.array([nuc for nuc in rp_a]) == np.array([nuc for nuc in rp_b])) >= 3
+                fail_condition_2.append(b)
 
+
+        # check that no overhang has GC content of 0% or 100%.
+        fail_condition_3 = []
+        for rp in rand_prim_set_OH:
+            gc_content = np.sum(np.array([(nuc in 'CGcg') for nuc in rp]))
+            fail_condition_3.append(gc_content == 0)
+        if verbose:
             print('Found ' + str((np.sum(fail_condition_1) + np.sum(fail_condition_2) + np.sum(fail_condition_3))) + ' exceptions')
-            if (np.sum(fail_condition_1) + np.sum(fail_condition_2) + np.sum(fail_condition_3)) > 0:
-                print(' Failed, Trying Next Primer Set...')
-                still_looking = True
-                count += 1
+        if (np.sum(fail_condition_1) + np.sum(fail_condition_2) + np.sum(fail_condition_3)) > 0:
+            if verbose:
+             print(' Failed, Trying Next Primer Set...')
+            still_looking = True
+            count += 1
 
-            else:
+        else:
+            if verbose:
                 print(' Found a set!')
-                best_set = rand_prim_set
-                still_looking = False
+            best_set = rand_prim_set
+            still_looking = False
 
 
-        decision_forward_primers = [f1]
-        decision_reverse_primers = []
+    decision_forward_primers = [f1]
+    decision_reverse_primers = []
+    if verbose:
         print('Results: ', best_set, '\n')
-        for i in best_set[1:-1]:
-            decision_forward_primers.append(forward_primer_seq[i])
-            decision_reverse_primers.append(reverse_primer_seq[i])
-        decision_reverse_primers.append(r1)
+    for i in best_set[1:-1]:
+        decision_forward_primers.append(forward_primer_seq[i])
+        decision_reverse_primers.append(reverse_primer_seq[i])
+    decision_reverse_primers.append(r1)
 
+    if verbose:
         print('Overhangs: ', rand_prim_set_OH, '\n')
 
 
-        prod_sizes = expected_product_sizes(seq)
+    prod_sizes = expected_product_sizes(seq)
 
-        if verbose == True:
-            for i in range(len(prod_sizes)):
-                print('PCR Reaction ' + str(i + 1) + ', Expected Size: ' + str(prod_sizes[i]) + ' bp')
-                print('Forward Primer:')
-                print(decision_forward_primers[i])
-                print('Reverse Primer:')
-                print(decision_reverse_primers[i])
-                print()
-        return(decision_forward_primers, decision_reverse_primers)
+    if verbose == True:
+        for i in range(len(prod_sizes)):
+            print('PCR Reaction ' + str(i + 1) + ', Expected Size: ' + str(prod_sizes[i]) + ' bp')
+            print('Forward Primer:')
+            print(decision_forward_primers[i])
+            print('Reverse Primer:')
+            print(decision_reverse_primers[i])
+            print()
+    return(decision_forward_primers, decision_reverse_primers)
 
-    else:
-
-        print('Can not currently design primers for this sequence with a single point mutation')
 
 
 def generate_order_form(primers, prefix):
@@ -551,10 +553,12 @@ def generate_order_form(primers, prefix):
         print(prefix + '_P' + str('{:02d}'.format(i+1)) + '_R, ' + primers_r[i][0:60])
 
 
+
 if __name__ == "__main__":
   seq = input("Enter desired nucleotide sequence (in frame if CDS)\n")
   part_type = input("Enter desired part type (1, 2, 3, 3a, 3b, 3bII, 4, 4a, 4b, 5, 6, 7, 8, 8a, 8b)\n")
   prefix = input("Enter a prefix for primer order form\n")
   print('Sequence is ' + str(len(seq)) + ' nucleotides')
   primers = generate_GG_protocol(seq, part_type, True)
+  print(primers)
   generate_order_form(primers, prefix)
