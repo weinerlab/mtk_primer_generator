@@ -560,5 +560,4 @@ if __name__ == "__main__":
   prefix = input("Enter a prefix for primer order form\n")
   print('Sequence is ' + str(len(seq)) + ' nucleotides')
   primers = generate_GG_protocol(seq, part_type, True)
-  print(primers)
   generate_order_form(primers, prefix)
