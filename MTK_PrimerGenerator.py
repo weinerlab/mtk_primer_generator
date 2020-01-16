@@ -553,10 +553,18 @@ def generate_order_form(primers, prefix):
         print(prefix + '_P' + str('{:02d}'.format(i+1)) + '_R, ' + primers_r[i][0:60])
 
 
+# get a sorted list of all currently supported parts
+def get_parts():
+    parts = []
+    for key in part_end_dict.keys():
+        if "forward" in key:
+            parts.append(key.replace("forward", ""))
+    parts.sort()
+    return parts
 
 if __name__ == "__main__":
   seq = input("Enter desired nucleotide sequence (in frame if CDS)\n")
-  part_type = input("Enter desired part type (1, 2, 3, 3a, 3b, 3bII, 4, 4a, 4b, 5, 6, 7, 8, 8a, 8b)\n")
+  part_type = input("Enter desired part type ({})\n".format(", ".join(get_parts())))
   prefix = input("Enter a prefix for primer order form\n")
   print('Sequence is ' + str(len(seq)) + ' nucleotides')
   primers = generate_GG_protocol(seq, part_type, True)
