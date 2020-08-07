@@ -207,11 +207,18 @@ def find_silent_mutations_in_RS(seq, ix_0):
         previous_codon, position_start, sil_muts = find_silent_mutations(seq, ix)
 
         for j in sil_muts:
+            # check to make sure we have removed the restrcition site
             candidate_seq = seq[ : position_start] + j + seq[position_start + 3:]
             a2, b2, c2, d2 = number_restriction_sites(candidate_seq)
             num_sites_end = a2 + b2 + c2 + d2
+            removal_condition = num_sites_end < num_sites_start
 
-            if num_sites_end < num_sites_start:
+            # check to make sure all requested changes are within the recognition site
+            changed_nts = np.where(np.array([candidate_seq[i] == seq[i] for i in range(len(seq))]) == False)[0]
+
+            within_bounds_condition = len(np.intersect1d(recog_site_ix, changed_nts)) == len(changed_nts)
+
+            if (removal_condition & within_bounds_condition):
                 proposed_silent_mutations.append(previous_codon + str(position_start) + j)
 
     return(np.unique(proposed_silent_mutations))
