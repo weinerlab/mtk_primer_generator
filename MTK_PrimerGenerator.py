@@ -1,5 +1,6 @@
 import numpy as np
 import readline
+from datetime import date
 
 ######################################################
 # Basic tools for sequences and primer generation
@@ -539,7 +540,19 @@ def generate_GG_protocol(seq, part_num, verbose):
             print('Reverse Primer:')
             print(decision_reverse_primers[i])
             print()
-    return(decision_forward_primers, decision_reverse_primers)
+            
+    # figure out the new sequence for optional generation of a genbank file
+    output_seq = seq
+    
+    for i in best_set[1:-1]:
+        pm = i.split('_')[0]
+        print(pm[:3], pm[3:-3], pm[-3:])
+        N = int(pm[3:-3])
+        output_seq = output_seq[:N] + pm[-3:] + output_seq[N + 3:]
+        
+    output_seq = rand_prim_set_OH[0] + output_seq + rand_prim_set_OH[-1]
+    
+    return(decision_forward_primers, decision_reverse_primers, output_seq)
 
 
 
@@ -559,7 +572,90 @@ def generate_order_form(primers, prefix):
         print(prefix + '_P' + str('{:02d}'.format(i+1)) + '_F, ' + primers_f[i][0:60])
         print(prefix + '_P' + str('{:02d}'.format(i+1)) + '_R, ' + primers_r[i][0:60])
 
+        
+def generate_gb_file(insert_seq, insert_name, plasmid_name):
+    
+    #######################################################################
+    # Generate a genbank file with your domesticated insert of interest in
+    # the MTK0_027 backbone
+    #######################################################################
+    
 
+    save_to_directory = '' # <- REPLACE THIS WITH AN APPROPRIATE LOCATION
+    
+    
+    pre_insert = 'tcatgaccaaaatcccttaacgtgagttttcgttccactgagcgtcagaccccgtagaaaagatcaaaggatcttcttgagatcctttttttctgcgcgtaatctgctgcttgcaaacaaaaaaaccaccgctaccagcggtggtttgtttgccggatcaagagctaccaactctttttccgaaggtaactggcttcagcagagcgcagataccaaatactgttcttctagtgtagccgtagttaggccaccacttcaagaactctgtagcaccgcctacatacctcgctctgctaatcctgttaccagtggctgctgccagtggcgataagtcgtgtcttaccgggttggactcaagacgatagttaccggataaggcgcagcggtcgggctgaacggggggttcgtgcacacagcccagcttggagcgaacgacctacaccgaactgagatacctacagcgtgagctatgagaaagcgccacgcttcccgaagggagaaaggcggacaggtatccggtaagcggcagggtcggaacaggagagcgcacgagggagcttccagggggaaacgcctggtatctttatagtcctgtcgggtttcgccacctctgacttgagcgtcgatttttgtgatgctcgtcaggggggcggagcctatggaaaaacgccagcaacgcggcctttttacggttcctggccttttgctggccttttgctcacatgttctttcctgcgttatcccctgattctgtggataaccgtgGGTCTCa'
+    post_insert = 'tGAGACCagaccaataaaaaacgcccggcggcaaccgagcgttctgaacaaatccagatggagttctgaggtcattactggatctatcaacaggagtccaagcgagctcgatatcaaattacgccccgccctgccactcatcgcagtactgttgtaattcattaagcattctgccgacatggaagccatcacaaacggcatgatgaacctgaatcgccagcggcatcagcaccttgtcgccttgcgtataatatttgcccatggtgaaaacgggggcgaagaagttgtccatattggccacgtttaaatcaaaactggtgaaactcacccagggattggctgaaacgaaaaacatattctcaataaaccctttagggaaataggccaggttttcaccgtaacacgccacatcttgcgaatatatgtgtagaaactgccggaaatcgtcgtggtattcactccagagcgatgaaaacgtttcagtttgctcatggaaaacggtgtaacaagggtgaacactatcccatatcaccagctcaccgtctttcattgccatacgaaattccggatgagcattcatcaggcgggcaagaatgtgaataaaggccggataaaacttgtgcttatttttctttacggtctttaaaaaggccgtaatatccagctgaacggtctggttataggtacattgagcaactgactgaaatgcctcaaaatgttctttacgatgccattgggatatatcaacggtggtatatccagtgatttttttctccattttagcttccttagctcctgaaaatctcgataactcaaaaaatacgcccggtagtgatcttatttcattatggtgaaagttggaacctcttacgtgcccgatcaa'
+
+    full_sequence = pre_insert + insert_seq + post_insert
+
+    bp_length = str(len(full_sequence))
+    insert_length = len(insert_seq)
+    today = date.today()
+    date_string = today.strftime("%d-%b-%Y").upper()
+    part_type = '3b'
+
+    camRTerm_seq = 'accaataaaaaacgcccggcggcaaccgagcgttctgaacaaatccagatggagttctgaggtcattactggatctatcaacaggagtccaagcgagctcgatatcaaa'
+    camR_seq = 'ttacgccccgccctgccactcatcgcagtactgttgtaattcattaagcattctgccgacatggaagccatcacaaacggcatgatgaacctgaatcgccagcggcatcagcaccttgtcgccttgcgtataatatttgcccatggtgaaaacgggggcgaagaagttgtccatattggccacgtttaaatcaaaactggtgaaactcacccagggattggctgaaacgaaaaacatattctcaataaaccctttagggaaataggccaggttttcaccgtaacacgccacatcttgcgaatatatgtgtagaaactgccggaaatcgtcgtggtattcactccagagcgatgaaaacgtttcagtttgctcatggaaaacggtgtaacaagggtgaacactatcccatatcaccagctcaccgtctttcattgccatacgaaattccggatgagcattcatcaggcgggcaagaatgtgaataaaggccggataaaacttgtgcttatttttctttacggtctttaaaaaggccgtaatatccagctgaacggtctggttataggtacattgagcaactgactgaaatgcctcaaaatgttctttacgatgccattgggatatatcaacggtggtatatccagtgatttttttctccat'
+    camRProm_seq = 'tttagcttccttagctcctgaaaatctcgataactcaaaaaatacgcccggtagtgatcttatttcattatggtgaaagttggaacctcttacgtgcccgatcaa'
+    camRTerm_position = full_sequence.find(camRTerm_seq) + 1
+    camR_position = full_sequence.find(camR_seq) + 1
+    camRProm_position = full_sequence.find(camRProm_seq) + 1
+
+    L0 = f'LOCUS       {plasmid_name}        {bp_length} bp ds-DNA     circular     {date_string}' #19-MAR-2021
+    L1 = f'DEFINITION  Mammalian toolkit cloning part containing {insert_name}'
+    L2 = 'ACCESSION   <unknown id>                                                       '
+    L3 = 'VERSION     <unknown id>                                                       '
+
+    L4 = 'FEATURES             Location/Qualifiers'
+    L5 = '     rep_origin      complement(1..764)'
+    L6 = '                     /label="ColE1"'
+    L7 = '                     /ApEinfo_revcolor=#7f7f7f'
+    L8 = '                     /ApEinfo_fwdcolor=#7f7f7f' 
+    L9 = f'     misc_feature    777..{str(777 + int(insert_length - 8 - 1))}'
+    L10 = f'                     /label="{insert_name}"'
+    L11 = f'     misc_feature    complement({camRTerm_position}..{camRTerm_position + len(camRTerm_seq) - 1})'
+    L12 = '                     /label="CamR Terminator"'
+    L13 = '                     /ApEinfo_revcolor=#84b0dc'
+    L14 = '                     /ApEinfo_fwdcolor=#84b0dc'       
+    L15 = f'     CDS             complement({camR_position}..{camR_position + len(camR_seq) - 1})'
+    L16 = '                     /label="CamR"'
+    L17 = '                     /ApEinfo_revcolor=#0000ff'
+    L18 = '                     /ApEinfo_fwdcolor=#0000ff'
+
+    L19 = f'     promoter        complement({camRProm_position}..{camRProm_position + len(camRProm_seq) - 1})'
+    L20 = '                     /label="CamR Promoter"'
+    L21 = '                     /ApEinfo_revcolor=#84b0dc'
+    L22 = '                     /ApEinfo_fwdcolor=#84b0dc'
+    L23 = '        '
+    L24 = 'ORIGIN'
+
+    gb_line_compilation = [L0, L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, L17, L18, L19, L20, L21, L22, L23, L24]
+
+    seq_to_print = full_sequence.lower()
+    groups_of_10 = [seq_to_print[(10*i):(10*(i+1))] for i in range(1 + len(seq_to_print)//10)]
+
+    for i in range(len(groups_of_10)//6 + 1):
+        nucs_so_far = str(60*i + 1)
+        spacer = ''
+        for s in range(5 - len(nucs_so_far)):
+            spacer += ' '
+        line_string = spacer + nucs_so_far + ' '
+        for k in range(6):
+            try:
+                line_string += groups_of_10[6*i + k] + ' '
+            except:
+                pass
+        gb_line_compilation.append(line_string)
+
+    gb_line_compilation.append('//')
+    
+    file_path = save_to_directory + plasmid_name + '.gb'
+    f = open(file_path, 'w')
+    f.writelines(line + '\n' for line in gb_line_compilation)
+    f.close()
+    
+    
 # get a sorted list of all currently supported parts
 def get_parts():
     parts = []
@@ -571,8 +667,13 @@ def get_parts():
 
 if __name__ == "__main__":
   seq = input("Enter desired nucleotide sequence (in frame if CDS)\n")
+  seq_name = input('What is the name (annotation) of the nucleotide sequence\n')
   part_type = input("Enter desired part type ({})\n".format(", ".join(get_parts())))
   prefix = input("Enter a prefix for primer order form\n")
   print('Sequence is ' + str(len(seq)) + ' nucleotides')
-  primers = generate_GG_protocol(seq, part_type, True)
+  primers_f, primers_r, output_sequence = generate_GG_protocol(seq, part_type, True)
+  primers = [primers_f, primers_r]
   generate_order_form(primers, prefix)
+  
+  plasmid_name = 'MTK' + part_type + '_' + seq_name
+  generate_gb_file(output_sequence, seq_name, plasmid_name)
