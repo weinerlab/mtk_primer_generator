@@ -174,6 +174,7 @@ def find_overhangs(dna_seq):
 
     return(overhangs)
 
+
 def find_bsmbi_overhangs(dna_seq):
 
     overhangs = []
@@ -189,6 +190,20 @@ def find_bsmbi_overhangs(dna_seq):
 
     return(overhangs)
 
+def find_bsai_overhangs(dna_seq):
+
+    overhangs = []
+    bsmbi_for_sites, bsmbi_rev_sites, bsai_for_sites, bsai_rev_sites = find_restriction_sites(dna_seq)
+
+    if len(bsai_for_sites) > 0:
+        for i in bsai_for_sites:
+            overhangs.append(dna_seq[i + 7 : i + 11])
+
+    if len(bsai_rev_sites) > 0:
+        for i in bsai_rev_sites:
+            overhangs.append(dna_seq[i - 5 : i - 1])
+
+    return(overhangs)
 
 ######################################################
 # Putting it all together
@@ -540,18 +555,27 @@ def generate_GG_protocol(seq, part_num, verbose):
             print('Reverse Primer:')
             print(decision_reverse_primers[i])
             print()
-            
+
     # figure out the new sequence for optional generation of a genbank file
     output_seq = seq
-    
+
     for i in best_set[1:-1]:
         pm = i.split('_')[0]
         print(pm[:3], pm[3:-3], pm[-3:])
         N = int(pm[3:-3])
         output_seq = output_seq[:N] + pm[-3:] + output_seq[N + 3:]
-        
-    output_seq = rand_prim_set_OH[0] + output_seq + rand_prim_set_OH[-1]
-    
+
+    part_specific_f = part_end_dict[str(part_num) + 'forward']
+    part_specific_r = part_end_dict[str(part_num) + 'reverse']
+
+    bsmbi_for_sites, bsmbi_rev_sites, bsai_for_sites, bsai_rev_sites = find_restriction_sites(part_specific_f)
+    bsai_overhang_front = part_specific_f[bsai_for_sites[-1] + 7:]
+
+    bsmbi_for_sites, bsmbi_rev_sites, bsai_for_sites, bsai_rev_sites = find_restriction_sites(part_specific_r)
+    bsai_overhang_rear = reverse_complement(part_specific_r[bsai_for_sites[-1] + 7:])
+
+    output_seq = bsai_overhang_front + output_seq + bsai_overhang_rear
+
     return(decision_forward_primers, decision_reverse_primers, output_seq)
 
 
@@ -572,18 +596,18 @@ def generate_order_form(primers, prefix):
         print(prefix + '_P' + str('{:02d}'.format(i+1)) + '_F, ' + primers_f[i][0:60])
         print(prefix + '_P' + str('{:02d}'.format(i+1)) + '_R, ' + primers_r[i][0:60])
 
-        
-def generate_gb_file(insert_seq, insert_name, plasmid_name):
-    
+
+def generate_gb_file(insert_seq, unchanged_input, part_type, insert_name, plasmid_name):
+
     #######################################################################
     # Generate a genbank file with your domesticated insert of interest in
     # the MTK0_027 backbone
     #######################################################################
-    
+
 
     save_to_directory = '' # <- REPLACE THIS WITH AN APPROPRIATE LOCATION
-    
-    
+
+
     pre_insert = 'tcatgaccaaaatcccttaacgtgagttttcgttccactgagcgtcagaccccgtagaaaagatcaaaggatcttcttgagatcctttttttctgcgcgtaatctgctgcttgcaaacaaaaaaaccaccgctaccagcggtggtttgtttgccggatcaagagctaccaactctttttccgaaggtaactggcttcagcagagcgcagataccaaatactgttcttctagtgtagccgtagttaggccaccacttcaagaactctgtagcaccgcctacatacctcgctctgctaatcctgttaccagtggctgctgccagtggcgataagtcgtgtcttaccgggttggactcaagacgatagttaccggataaggcgcagcggtcgggctgaacggggggttcgtgcacacagcccagcttggagcgaacgacctacaccgaactgagatacctacagcgtgagctatgagaaagcgccacgcttcccgaagggagaaaggcggacaggtatccggtaagcggcagggtcggaacaggagagcgcacgagggagcttccagggggaaacgcctggtatctttatagtcctgtcgggtttcgccacctctgacttgagcgtcgatttttgtgatgctcgtcaggggggcggagcctatggaaaaacgccagcaacgcggcctttttacggttcctggccttttgctggccttttgctcacatgttctttcctgcgttatcccctgattctgtggataaccgtgGGTCTCa'
     post_insert = 'tGAGACCagaccaataaaaaacgcccggcggcaaccgagcgttctgaacaaatccagatggagttctgaggtcattactggatctatcaacaggagtccaagcgagctcgatatcaaattacgccccgccctgccactcatcgcagtactgttgtaattcattaagcattctgccgacatggaagccatcacaaacggcatgatgaacctgaatcgccagcggcatcagcaccttgtcgccttgcgtataatatttgcccatggtgaaaacgggggcgaagaagttgtccatattggccacgtttaaatcaaaactggtgaaactcacccagggattggctgaaacgaaaaacatattctcaataaaccctttagggaaataggccaggttttcaccgtaacacgccacatcttgcgaatatatgtgtagaaactgccggaaatcgtcgtggtattcactccagagcgatgaaaacgtttcagtttgctcatggaaaacggtgtaacaagggtgaacactatcccatatcaccagctcaccgtctttcattgccatacgaaattccggatgagcattcatcaggcgggcaagaatgtgaataaaggccggataaaacttgtgcttatttttctttacggtctttaaaaaggccgtaatatccagctgaacggtctggttataggtacattgagcaactgactgaaatgcctcaaaatgttctttacgatgccattgggatatatcaacggtggtatatccagtgatttttttctccattttagcttccttagctcctgaaaatctcgataactcaaaaaatacgcccggtagtgatcttatttcattatggtgaaagttggaacctcttacgtgcccgatcaa'
 
@@ -593,7 +617,6 @@ def generate_gb_file(insert_seq, insert_name, plasmid_name):
     insert_length = len(insert_seq)
     today = date.today()
     date_string = today.strftime("%d-%b-%Y").upper()
-    part_type = '3b'
 
     camRTerm_seq = 'accaataaaaaacgcccggcggcaaccgagcgttctgaacaaatccagatggagttctgaggtcattactggatctatcaacaggagtccaagcgagctcgatatcaaa'
     camR_seq = 'ttacgccccgccctgccactcatcgcagtactgttgtaattcattaagcattctgccgacatggaagccatcacaaacggcatgatgaacctgaatcgccagcggcatcagcaccttgtcgccttgcgtataatatttgcccatggtgaaaacgggggcgaagaagttgtccatattggccacgtttaaatcaaaactggtgaaactcacccagggattggctgaaacgaaaaacatattctcaataaaccctttagggaaataggccaggttttcaccgtaacacgccacatcttgcgaatatatgtgtagaaactgccggaaatcgtcgtggtattcactccagagcgatgaaaacgtttcagtttgctcatggaaaacggtgtaacaagggtgaacactatcccatatcaccagctcaccgtctttcattgccatacgaaattccggatgagcattcatcaggcgggcaagaatgtgaataaaggccggataaaacttgtgcttatttttctttacggtctttaaaaaggccgtaatatccagctgaacggtctggttataggtacattgagcaactgactgaaatgcctcaaaatgttctttacgatgccattgggatatatcaacggtggtatatccagtgatttttttctccat'
@@ -603,7 +626,7 @@ def generate_gb_file(insert_seq, insert_name, plasmid_name):
     camRProm_position = full_sequence.find(camRProm_seq) + 1
 
     L0 = f'LOCUS       {plasmid_name}        {bp_length} bp ds-DNA     circular     {date_string}' #19-MAR-2021
-    L1 = f'DEFINITION  Mammalian toolkit cloning part containing {insert_name}'
+    L1 = f'DEFINITION  Mammalian toolkit cloning part type {part_type} containing {insert_name}'
     L2 = 'ACCESSION   <unknown id>                                                       '
     L3 = 'VERSION     <unknown id>                                                       '
 
@@ -611,13 +634,14 @@ def generate_gb_file(insert_seq, insert_name, plasmid_name):
     L5 = '     rep_origin      complement(1..764)'
     L6 = '                     /label="ColE1"'
     L7 = '                     /ApEinfo_revcolor=#7f7f7f'
-    L8 = '                     /ApEinfo_fwdcolor=#7f7f7f' 
-    L9 = f'     misc_feature    777..{str(777 + int(insert_length - 8 - 1))}'
+    L8 = '                     /ApEinfo_fwdcolor=#7f7f7f'
+    L9 = f'     misc_feature    777..{str(777 + len(unchanged_input) - 1)}'
+    #L9 = f'     misc_feature    777..{str(777 + int(insert_length - 8 - 1))}'
     L10 = f'                     /label="{insert_name}"'
     L11 = f'     misc_feature    complement({camRTerm_position}..{camRTerm_position + len(camRTerm_seq) - 1})'
     L12 = '                     /label="CamR Terminator"'
     L13 = '                     /ApEinfo_revcolor=#84b0dc'
-    L14 = '                     /ApEinfo_fwdcolor=#84b0dc'       
+    L14 = '                     /ApEinfo_fwdcolor=#84b0dc'
     L15 = f'     CDS             complement({camR_position}..{camR_position + len(camR_seq) - 1})'
     L16 = '                     /label="CamR"'
     L17 = '                     /ApEinfo_revcolor=#0000ff'
@@ -649,13 +673,13 @@ def generate_gb_file(insert_seq, insert_name, plasmid_name):
         gb_line_compilation.append(line_string)
 
     gb_line_compilation.append('//')
-    
+
     file_path = save_to_directory + plasmid_name + '.gb'
     f = open(file_path, 'w')
     f.writelines(line + '\n' for line in gb_line_compilation)
     f.close()
-    
-    
+
+
 # get a sorted list of all currently supported parts
 def get_parts():
     parts = []
@@ -674,6 +698,6 @@ if __name__ == "__main__":
   primers_f, primers_r, output_sequence = generate_GG_protocol(seq, part_type, True)
   primers = [primers_f, primers_r]
   generate_order_form(primers, prefix)
-  
+
   plasmid_name = 'MTK' + part_type + '_' + seq_name
-  generate_gb_file(output_sequence, seq_name, plasmid_name)
+  generate_gb_file(output_sequence, seq, part_type, seq_name, plasmid_name)
